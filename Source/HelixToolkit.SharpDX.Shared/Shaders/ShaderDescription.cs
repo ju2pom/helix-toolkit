@@ -28,6 +28,8 @@ namespace HelixToolkit.UWP
         [DataContract]
         public sealed class ShaderDescription
         {
+            private object locker = new object();
+
             /// <summary>
             /// Gets or sets the name.
             /// </summary>
@@ -250,80 +252,83 @@ namespace HelixToolkit.UWP
                 {
                     return null;
                 }
-                ShaderReflector = ShaderReflector ?? new ShaderReflector();
-                ShaderReflector.Parse(ByteCode, ShaderType);
-                Level = ShaderReflector.FeatureLevel;
-                if (Level > device.FeatureLevel)
+                lock (this.locker)
                 {
-                    logger?.Log(LogLevel.Warning, $"Shader {this.Name} requires FeatureLevel {Level}. Current device only supports FeatureLevel {device.FeatureLevel} and below.");
-                    return null;
-                    //throw new Exception($"Shader {this.Name} requires FeatureLevel {Level}. Current device only supports FeatureLevel {device.FeatureLevel} and below.");
-                }
-                this.ConstantBufferMappings = ShaderReflector.ConstantBufferMappings.Values.ToArray();
-                this.TextureMappings = ShaderReflector.TextureMappings.Values.ToArray();
-                this.UAVMappings = ShaderReflector.UAVMappings.Values.ToArray();
-                this.SamplerMappings = ShaderReflector.SamplerMappings.Values.ToArray();
+                    ShaderReflector = ShaderReflector ?? new ShaderReflector();
+                    ShaderReflector.Parse(ByteCode, ShaderType);
+                    Level = ShaderReflector.FeatureLevel;
+                    if (Level > device.FeatureLevel)
+                    {
+                        logger?.Log(LogLevel.Warning, $"Shader {this.Name} requires FeatureLevel {Level}. Current device only supports FeatureLevel {device.FeatureLevel} and below.");
+                        return null;
+                        //throw new Exception($"Shader {this.Name} requires FeatureLevel {Level}. Current device only supports FeatureLevel {device.FeatureLevel} and below.");
+                    }
+                    this.ConstantBufferMappings = ShaderReflector.ConstantBufferMappings.Values.ToArray();
+                    this.TextureMappings = ShaderReflector.TextureMappings.Values.ToArray();
+                    this.UAVMappings = ShaderReflector.UAVMappings.Values.ToArray();
+                    this.SamplerMappings = ShaderReflector.SamplerMappings.Values.ToArray();
 
-                ShaderBase shader = null;
-                switch (ShaderType)
-                {
-                    case ShaderStage.Vertex:
-                        shader = new VertexShader(device, Name, ByteCode);
-                        break;
-                    case ShaderStage.Pixel:
-                        shader = new PixelShader(device, Name, ByteCode);
-                        break;
-                    case ShaderStage.Compute:
-                        shader = new ComputeShader(device, Name, ByteCode);
-                        break;
-                    case ShaderStage.Domain:
-                        shader = new DomainShader(device, Name, ByteCode);
-                        break;
-                    case ShaderStage.Hull:
-                        shader = new HullShader(device, Name, ByteCode);
-                        break;
-                    case ShaderStage.Geometry:
-                        if (IsGSStreamOut)
+                    ShaderBase shader = null;
+                    switch (ShaderType)
+                    {
+                        case ShaderStage.Vertex:
+                            shader = new VertexShader(device, Name, ByteCode);
+                            break;
+                        case ShaderStage.Pixel:
+                            shader = new PixelShader(device, Name, ByteCode);
+                            break;
+                        case ShaderStage.Compute:
+                            shader = new ComputeShader(device, Name, ByteCode);
+                            break;
+                        case ShaderStage.Domain:
+                            shader = new DomainShader(device, Name, ByteCode);
+                            break;
+                        case ShaderStage.Hull:
+                            shader = new HullShader(device, Name, ByteCode);
+                            break;
+                        case ShaderStage.Geometry:
+                            if (IsGSStreamOut)
+                            {
+                                shader = new GeometryShader(device, Name, ByteCode, GSSOElement, GSSOStrides, GSSORasterized);
+                            }
+                            else
+                            {
+                                shader = new GeometryShader(device, Name, ByteCode);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                    if (ConstantBufferMappings != null)
+                    {
+                        foreach (var mapping in ConstantBufferMappings)
                         {
-                            shader = new GeometryShader(device, Name, ByteCode, GSSOElement, GSSOStrides, GSSORasterized);
+                            shader.ConstantBufferMapping.AddMapping(mapping.Description.Name, mapping.Slot, pool.Register(mapping.Description));
                         }
-                        else
+                    }
+                    if (TextureMappings != null)
+                    {
+                        foreach (var mapping in TextureMappings)
                         {
-                            shader = new GeometryShader(device, Name, ByteCode);
+                            shader.ShaderResourceViewMapping.AddMapping(mapping.Description.Name, mapping.Slot, mapping);
                         }
-                        break;
-                    default:
-                        break;
-                }
-                if (ConstantBufferMappings != null)
-                {
-                    foreach (var mapping in ConstantBufferMappings)
-                    {
-                        shader.ConstantBufferMapping.AddMapping(mapping.Description.Name, mapping.Slot, pool.Register(mapping.Description));
                     }
-                }
-                if (TextureMappings != null)
-                {
-                    foreach (var mapping in TextureMappings)
+                    if (UAVMappings != null)
                     {
-                        shader.ShaderResourceViewMapping.AddMapping(mapping.Description.Name, mapping.Slot, mapping);
+                        foreach (var mapping in UAVMappings)
+                        {
+                            shader.UnorderedAccessViewMapping.AddMapping(mapping.Description.Name, mapping.Slot, mapping);
+                        }
                     }
-                }
-                if (UAVMappings != null)
-                {
-                    foreach(var mapping in UAVMappings)
+                    if (SamplerMappings != null)
                     {
-                        shader.UnorderedAccessViewMapping.AddMapping(mapping.Description.Name, mapping.Slot, mapping);
+                        foreach (var mapping in SamplerMappings)
+                        {
+                            shader.SamplerMapping.AddMapping(mapping.Name, mapping.Slot, mapping);
+                        }
                     }
+                    return shader;
                 }
-                if (SamplerMappings != null)
-                {
-                    foreach(var mapping in SamplerMappings)
-                    {
-                        shader.SamplerMapping.AddMapping(mapping.Name, mapping.Slot, mapping);
-                    }
-                }
-                return shader;
             }
 
             /// <summary>
