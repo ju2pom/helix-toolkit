@@ -297,7 +297,7 @@ namespace HelixToolkit.UWP
             /// <param name="renderContext">The render context.</param>
             /// <param name="eye">The eye.</param>
             /// <returns></returns>
-            protected Matrix CreateViewMatrix(RenderContext renderContext, out Vector3 eye)
+            protected virtual Matrix CreateViewMatrix(RenderContext renderContext, out Vector3 eye)
             {
                 eye = -renderContext.Camera.LookDirection.Normalized() * CameraDistance;
                 if (IsRightHand)
