@@ -188,8 +188,14 @@ namespace HelixToolkit.Wpf.SharpDX
                             yield return item;
                         }
                     }
-                    yield return viewCube.SceneNode;
-                    yield return coordinateView.SceneNode;
+                    if (this.ShowViewCube)
+                    {
+                        yield return viewCube.SceneNode;
+                    }
+                    if (this.ShowCoordinateSystem)
+                    {
+                        yield return coordinateView.SceneNode;
+                    }
                 }
             }
         }
@@ -204,8 +210,14 @@ namespace HelixToolkit.Wpf.SharpDX
                     {
                         yield return item.SceneNode;
                     }
-                    yield return viewCube.SceneNode;
-                    yield return coordinateView.SceneNode;
+                    if (this.ShowViewCube)
+                    {
+                        yield return viewCube.SceneNode;
+                    }
+                    if (this.ShowCoordinateSystem)
+                    {
+                        yield return coordinateView.SceneNode;
+                    }
                 }
             }
         }
@@ -1698,6 +1710,11 @@ namespace HelixToolkit.Wpf.SharpDX
 
         private bool ViewBoxHitTest(Point p, InputEventArgs originalInputEventArgs = null)
         {
+            if (!this.ShowViewCube)
+            {
+                return false;
+            }
+
             var ray = this.UnProject(p.ToVector2());
             var hits = new List<HitTestResult>();
             var hitContext = new HitTestContext(RenderContext, ray, p.ToVector2());
