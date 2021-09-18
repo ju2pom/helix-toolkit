@@ -30,8 +30,9 @@ namespace HelixToolkit.UWP
     {
         public partial class Importer
         {
-            private readonly ConcurrentDictionary<string, TextureModel> textureDict =
-                new ConcurrentDictionary<string, TextureModel>();
+            private readonly ConcurrentDictionary<string, TextureModel> textureDict = new ConcurrentDictionary<string, TextureModel>();
+            private readonly ConcurrentDictionary<string, string> textureFixedPathDict = new ConcurrentDictionary<string, string>();
+
             /// <summary>
             ///     To the phong material.
             /// </summary>
@@ -59,8 +60,8 @@ namespace HelixToolkit.UWP
 
                 if (material.HasTextureDiffuse)
                 {
-                    phong.DiffuseMap = LoadTexture(material.TextureDiffuse.FilePath);
-                    phong.DiffuseMapFilePath = material.TextureDiffuse.FilePath;
+                    phong.DiffuseMap = LoadTexture(material.TextureDiffuse.FilePath, out var actualTexturePath);
+                    phong.DiffuseMapFilePath = actualTexturePath;
                     var desc = Shaders.DefaultSamplers.LinearSamplerClampAni1;
                     desc.AddressU = ToDXAddressMode(material.TextureDiffuse.WrapModeU);
                     desc.AddressV = ToDXAddressMode(material.TextureDiffuse.WrapModeV);
@@ -69,34 +70,34 @@ namespace HelixToolkit.UWP
 
                 if (material.HasTextureNormal)
                 {
-                    phong.NormalMap = LoadTexture(material.TextureNormal.FilePath);
-                    phong.NormalMapFilePath = material.TextureNormal.FilePath;
+                    phong.NormalMap = LoadTexture(material.TextureNormal.FilePath, out var actualTexturePath);
+                    phong.NormalMapFilePath = actualTexturePath;
                 }
                 else if (material.HasTextureHeight)
                 {
-                    phong.NormalMap = LoadTexture(material.TextureHeight.FilePath);
-                    phong.NormalMapFilePath = material.TextureHeight.FilePath;
+                    phong.NormalMap = LoadTexture(material.TextureHeight.FilePath, out var actualTexturePath);
+                    phong.NormalMapFilePath = actualTexturePath;
                 }
                 if (material.HasTextureSpecular)
                 {
-                    phong.SpecularColorMap = LoadTexture(material.TextureSpecular.FilePath);
-                    phong.SpecularColorMapFilePath = material.TextureSpecular.FilePath;
+                    phong.SpecularColorMap = LoadTexture(material.TextureSpecular.FilePath, out var actualTexturePath);
+                    phong.SpecularColorMapFilePath = actualTexturePath;
                 }
                 if (material.HasTextureDisplacement)
                 {
-                    phong.DisplacementMap = LoadTexture(material.TextureDisplacement.FilePath);
-                    phong.DisplacementMapFilePath = material.TextureDisplacement.FilePath;
+                    phong.DisplacementMap = LoadTexture(material.TextureDisplacement.FilePath, out var actualTexturePath);
+                    phong.DisplacementMapFilePath = actualTexturePath;
                 }
 
                 if (material.HasTextureOpacity)
                 {
-                    phong.DiffuseAlphaMap = LoadTexture(material.TextureOpacity.FilePath);
-                    phong.DiffuseAlphaMapFilePath = material.TextureOpacity.FilePath;
+                    phong.DiffuseAlphaMap = LoadTexture(material.TextureOpacity.FilePath, out var actualTexturePath);
+                    phong.DiffuseAlphaMapFilePath = actualTexturePath;
                 }
                 if (material.HasTextureEmissive)
                 {
-                    phong.EmissiveMap = LoadTexture(material.TextureEmissive.FilePath);
-                    phong.EmissiveMapFilePath = material.TextureEmissive.FilePath;
+                    phong.EmissiveMap = LoadTexture(material.TextureEmissive.FilePath, out var actualTexturePath);
+                    phong.EmissiveMapFilePath = actualTexturePath;
                 }
 
                 if (material.HasNonTextureProperty(AiMatKeys.UVTRANSFORM_BASE))
@@ -177,8 +178,8 @@ namespace HelixToolkit.UWP
 
                 if (material.HasTextureDiffuse)
                 {
-                    pbr.AlbedoMap = LoadTexture(material.TextureDiffuse.FilePath);
-                    pbr.AlbedoMapFilePath = material.TextureDiffuse.FilePath;
+                    pbr.AlbedoMap = LoadTexture(material.TextureDiffuse.FilePath, out var actualTexturePath);
+                    pbr.AlbedoMapFilePath = actualTexturePath;
                     var desc = Shaders.DefaultSamplers.LinearSamplerClampAni1;
                     desc.AddressU = ToDXAddressMode(material.TextureDiffuse.WrapModeU);
                     desc.AddressV = ToDXAddressMode(material.TextureDiffuse.WrapModeV);
@@ -187,41 +188,41 @@ namespace HelixToolkit.UWP
 
                 if (material.HasTextureNormal)
                 {
-                    pbr.NormalMap = LoadTexture(material.TextureNormal.FilePath);
-                    pbr.NormalMapFilePath = material.TextureNormal.FilePath;
+                    pbr.NormalMap = LoadTexture(material.TextureNormal.FilePath, out var actualTexturePath);
+                    pbr.NormalMapFilePath = actualTexturePath;
                 }
                 else if (material.HasTextureHeight)
                 {
-                    pbr.NormalMap = LoadTexture(material.TextureHeight.FilePath);
-                    pbr.NormalMapFilePath = material.TextureHeight.FilePath;
+                    pbr.NormalMap = LoadTexture(material.TextureHeight.FilePath, out var actualTexturePath);
+                    pbr.NormalMapFilePath = actualTexturePath;
                 }
                 if (material.HasProperty(GLTFMatKeys.AI_MATKEY_GLTF_METALLICROUGHNESSAO_TEXTURE, TextureType.Unknown, 0))
                 {
                     var t = material.GetProperty(GLTFMatKeys.AI_MATKEY_GLTF_METALLICROUGHNESSAO_TEXTURE,
                         TextureType.Unknown, 0);
-                    pbr.RoughnessMetallicMap = LoadTexture(t.GetStringValue());
-                    pbr.RoughnessMetallicMapFilePath = t.GetStringValue();
+                    pbr.RoughnessMetallicMap = LoadTexture(t.GetStringValue(), out var actualTexturePath);
+                    pbr.RoughnessMetallicMapFilePath = actualTexturePath;
                 }
                 else if (material.HasTextureSpecular)
                 {
-                    pbr.RoughnessMetallicMap = LoadTexture(material.TextureSpecular.FilePath);
-                    pbr.RoughnessMetallicMapFilePath = material.TextureSpecular.FilePath;
+                    pbr.RoughnessMetallicMap = LoadTexture(material.TextureSpecular.FilePath, out var actualTexturePath);
+                    pbr.RoughnessMetallicMapFilePath = actualTexturePath;
                 }
 
                 if (material.HasTextureDisplacement)
                 {
-                    pbr.DisplacementMap = LoadTexture(material.TextureDisplacement.FilePath);
-                    pbr.DisplacementMapFilePath = material.TextureDisplacement.FilePath;
+                    pbr.DisplacementMap = LoadTexture(material.TextureDisplacement.FilePath, out var actualTexturePath);
+                    pbr.DisplacementMapFilePath = actualTexturePath;
                 }
                 if (material.HasTextureLightMap)
                 {
-                    pbr.AmbientOcculsionMap = LoadTexture(material.TextureLightMap.FilePath);
-                    pbr.AmbientOcculsionMapFilePath = material.TextureLightMap.FilePath;
+                    pbr.AmbientOcculsionMap = LoadTexture(material.TextureLightMap.FilePath, out var actualTexturePath);
+                    pbr.AmbientOcculsionMapFilePath = actualTexturePath;
                 }
                 if (material.HasTextureEmissive)
                 {
-                    pbr.EmissiveMap = LoadTexture(material.TextureEmissive.FilePath);
-                    pbr.EmissiveMapFilePath = material.TextureEmissive.FilePath;
+                    pbr.EmissiveMap = LoadTexture(material.TextureEmissive.FilePath, out var actualTexturePath);
+                    pbr.EmissiveMapFilePath = actualTexturePath;
                 }
                 if(material.HasNonTextureProperty(AiMatKeys.UVTRANSFORM_BASE))
                 {
@@ -314,8 +315,8 @@ namespace HelixToolkit.UWP
 
                             if (material.HasTextureDiffuse)
                             {
-                                diffuse.DiffuseMap = LoadTexture(material.TextureDiffuse.FilePath);
-                                diffuse.DiffuseMapFilePath = material.TextureDiffuse.FilePath;
+                                diffuse.DiffuseMap = LoadTexture(material.TextureDiffuse.FilePath, out var actualTexturePath);
+                                diffuse.DiffuseMapFilePath = actualTexturePath;
                             }
                             if (material.ShadingMode == ShadingMode.Flat)
                             {
@@ -380,27 +381,30 @@ namespace HelixToolkit.UWP
             }
 
 
-            private TextureModel LoadTexture(string texturePath)
+            private TextureModel LoadTexture(string texturePath, out string actualPath)
             {
                 if (textureDict.TryGetValue(texturePath, out var s))
                 {
+                    actualPath = texturePath;
                     return s;
                 }
 
-                var texture = OnLoadTexture(texturePath, out var actualPath);
+                if (textureFixedPathDict.TryGetValue(texturePath, out actualPath))
+                {
+                    return textureDict[actualPath];
+                }
+
+                var texture = OnLoadTexture(texturePath, out actualPath);
                 if (texture != null)
                 {
-                    if (!string.IsNullOrEmpty(actualPath))
-                    {                    
-                        // If texture is a separate file, uses file path as key and recheck whether exists
-                        if (!textureDict.TryAdd(actualPath, texture))
-                        {
-                            texture = textureDict[actualPath];
-                        }
-                    }
-                    else
+                    if (!textureDict.ContainsKey(actualPath))
                     {
-                        textureDict.TryAdd(texturePath, texture);
+                        textureDict[actualPath] = texture;
+                    }
+                    
+                    if (actualPath != texturePath)
+                    {
+                        textureFixedPathDict[texturePath] = actualPath;
                     }
                 }
                 return texture;
